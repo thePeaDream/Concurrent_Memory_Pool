@@ -1,5 +1,5 @@
 #pragma once
-#include "Common.h"
+#include "../Common/Common.h"
 
 static inline void*& NextObj(void* obj)//给一个内存块对象，返回内存块前4/8byte的引用
 {

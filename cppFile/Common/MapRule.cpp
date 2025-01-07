@@ -1,4 +1,4 @@
-#include "../hFile/Common/MapRule.h"
+#include "../../hFile/Common/MapRule.h"
 //申请的对象内存块大小，对齐以后是多大
 size_t MapRule::Align(size_t size)
 {

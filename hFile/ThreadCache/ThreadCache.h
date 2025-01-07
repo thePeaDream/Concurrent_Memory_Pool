@@ -1,7 +1,7 @@
 #pragma once
-#include "Common/Common.h"
+#include "../Common/Common.h"
 #include "FreeList.hpp"
-#include "Common/MapRule.h"
+#include "../Common/MapRule.h"
 class ThreadCache
 {
 public:

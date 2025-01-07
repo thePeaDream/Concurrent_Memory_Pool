@@ -1,4 +1,4 @@
-#include "../hFile/PageCache/PageCache.h"
+#include "../../hFile/PageCache/PageCache.h"
 PageCache PageCache::_pageCacheInstance;
 
 //把n页的Span，切分成 n1页的Span 和 n2页的Span
@@ -26,16 +26,18 @@ Span* PageCache::Split(size_t n, size_t n1, size_t n2)
 
     return n1Span;
 }
-//获取一个k页的span
+//弹出一个k页的span给 用户 或 CentralCache
 Span* PageCache::NewSpan(size_t k)
 {
     assert(k > 0 && k < NPAGES);
+
     //1 先去_spanLists[k]去找span
     if(!_spanLists[k].Empty())
     {
+        
         return _spanLists[k].PopFront();
     }
-    
+
     //2 若没有，往后面的桶里找span(n页)，把它切分成 k页 的 span
     for(size_t n = k+1; n < NPAGES; ++n)
     {
@@ -46,6 +48,7 @@ Span* PageCache::NewSpan(size_t k)
             return Split(n,k,n-k);
         }
     }
+ 
     //3 若Page Cache没有合适的span了，就向系统申请一块NPAGE - 1页的Span
     void* memory = myMalloc((NPAGES - 1) << 13);
     if(memory == nullptr)
@@ -53,6 +56,7 @@ Span* PageCache::NewSpan(size_t k)
     Span* newSpan = new Span;
     newSpan->_pageId = (long long)memory >> 13;
     newSpan->_n = NPAGES-1;
+    _spanLists[NPAGES-1].PushFront(newSpan);
 
     //4 切分新申请的span
     return Split(newSpan->_n,k,newSpan->_n-k);

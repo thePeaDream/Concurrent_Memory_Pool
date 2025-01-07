@@ -1,13 +1,15 @@
-#include "../hFile/ThreadCache/ThreadCache.h"
-#include "../hFile/CentralCache/CentralCache.h"
+#include "../../hFile/ThreadCache/ThreadCache.h"
+#include "../../hFile/CentralCache/CentralCache.h"
 
 
 void* ThreadCache::Allocate(size_t size)
 {
     //对齐以后实际分配的内存块大小
     size_t alignSize = MapRule::Align(size);
+
     //对应的自由链表桶下标
     size_t index = MapRule::Index(size);
+
     if(!_freeLists[index].Empty())
         return _freeLists[index].Pop();
     else

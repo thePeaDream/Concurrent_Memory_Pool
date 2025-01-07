@@ -1,5 +1,5 @@
 #pragma once
-#include "ThreadCache.h"
+#include "ThreadCache/ThreadCache.h"
 
 //向Thread Cache申请size byte 空间
 void* ConcurrentAlloc(size_t size);

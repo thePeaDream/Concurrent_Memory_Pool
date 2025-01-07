@@ -1,6 +1,6 @@
 #pragma once
-#include "Common/Common.h"
-#include "Common/Span.hpp"
+#include "../Common/Common.h"
+#include "../Common/Span.hpp"
 
 class CentralCache
 {

@@ -1,6 +1,6 @@
 #pragma once
-#include "Common/Common.h"
-#include "Common/Span.hpp"
+#include "../Common/Common.h"
+#include "../Common/Span.hpp"
 
 class PageCache
 {
@@ -17,7 +17,7 @@ public:
         //当前数据段末尾
         void* old_brk = sbrk(0);
         //要设置的数据段新末尾
-        void* new_brk = old_brk + size;
+        void* new_brk = (char*)old_brk + size;
         //用brk函数来调整堆区最高位置
         if (brk(new_brk) == -1) return nullptr;
         //此时，old_brk和new_brk之间的空间就是新申请到的内存空间
