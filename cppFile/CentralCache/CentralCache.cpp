@@ -75,6 +75,7 @@ Span* CentralCache::GetOneSpan(SpanList& list,size_t size)
     //访问PageCache时就要加锁
     PageCache::GetInstance()->_mtx.lock();
     Span* span = PageCache::GetInstance()->NewSpan(page);
+    span->_is_use = true;
     PageCache::GetInstance()->_mtx.unlock();
     
     //注意：获取的这个span，只有当前线程可以访问到，对获取的span进行切分时，可以先不加锁
@@ -101,4 +102,52 @@ Span* CentralCache::GetOneSpan(SpanList& list,size_t size)
     list._mtx.lock();
     list.PushFront(span);
     return span;
+}
+
+//Thread Cache调用它还内存块给Span
+void CentralCache::ReleaseMemBlockToSpans(void* start,size_t size)
+{
+    //先算出属于哪一个桶
+    size_t index = MapRule::Index(size);
+    _spanLists[index]._mtx.lock();
+    void* cur = start;
+    while(cur)
+    {
+        //将下一个内存块对象记录下来
+        void* next = NextObj(cur);
+
+        //找到当前内存块对象对应的Span*
+        Span* span = PageCache::GetInstance()->MemBlockToSpan(cur);
+
+        //将当前内存块对象头插进对应Span
+        NextObj(cur) = span->_freeList;
+        span->_freeList = cur;
+
+        //设置该span被使用的内存块
+        span->_useCount--;
+        if(span->_useCount == 0)
+        {
+            //说明该span切分出去的内存块都回来了，可以回收给PageCache，
+            //PageCache去做前后页的合并，合并成更大页的Span，缓解内存碎片问题
+            _spanLists[index].Erase(span);
+            span->_freeList = nullptr;
+            span->_next = nullptr;
+            span->_prev = nullptr;
+            span->_is_use = false;
+            //唯一不能动的是页号和页数
+            
+
+            //解桶锁，让其他线程的Thread Cache也能在这个桶里申请/释放内存块，当前线程要还Span给PageCache,暂时不会访问这个桶
+            _spanLists[index]._mtx.unlock();
+            //将span返回给PageCache
+            PageCache::GetInstance()->_mtx.lock();
+            PageCache::GetInstance()->ReleaseSpanToPageCache(span);
+            PageCache::GetInstance()->_mtx.unlock();
+            //重新加上桶锁
+            _spanLists[index]._mtx.lock();
+        }
+
+        cur = next; 
+    }
+    _spanLists[index]._mtx.unlock();
 }

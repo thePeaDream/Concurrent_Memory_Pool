@@ -26,6 +26,8 @@ public:
 private:
     //index位置自由链表的内存块不够时，向Central Cache获取alignSize大小的内存块对象，内部会根据情况获取数量
     void* FetchFromCentralCache(size_t index,size_t alignSize);
+    
+    void FreeMemblockToCentralCache(FreeList& freeList,size_t size);
 private:
     FreeList _freeLists[208];
 };

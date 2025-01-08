@@ -12,6 +12,7 @@ public:
     }
     //将一定数量的内存块对象(连续)返回给thread cache
     size_t FetchRangeObj(void*& start, void*& end, size_t n, size_t nsize);
+    void ReleaseMemBlockToSpans(void* start,size_t size);
 private:
     //获取某个桶中的一个非空的Span
     Span* GetOneSpan(SpanList& list,size_t size);    

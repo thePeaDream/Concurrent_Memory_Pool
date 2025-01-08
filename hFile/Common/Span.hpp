@@ -11,7 +11,9 @@ struct Span
     Span* _prev = nullptr;
 
     size_t _useCount = 0;//小块内存被分配给thread cache的计数
-    void* _freeList = nullptr;//切好的小块内存自由链表    
+    void* _freeList = nullptr;//切好的小块内存自由链表
+
+    bool _is_use = false;//判断是否被使用    
 };
 
 class SpanList

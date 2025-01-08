@@ -23,10 +23,16 @@ public:
         //此时，old_brk和new_brk之间的空间就是新申请到的内存空间
         return old_brk;
     }
+
+    //获取内存块对象到Span的映射
+    Span* MemBlockToSpan(void* object);
+
+    void ReleaseSpanToPageCache(Span* span);
 public:
     std::mutex _mtx;
 private:
     SpanList _spanLists[NPAGES];
+    std::unordered_map<PAGE_ID,Span*> _pageShiftSpan;
 private:
     //单例模式
     static PageCache _pageCacheInstance;

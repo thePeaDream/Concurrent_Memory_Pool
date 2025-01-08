@@ -15,17 +15,33 @@ public:
         assert(obj!=nullptr);
         NextObj(obj) = _freeList;
         _freeList = obj;
+        _size++;
     }
-    inline void PushRange(void* start,void* end)//往自由链表里插入一段连续的内存块
+    inline void PushRange(void* start,void* end,size_t num)//往自由链表里头插一段连续的内存块对象
     {
         NextObj(end) = _freeList;
         _freeList = start;
+        _size += num;
+    }
+    void PopRange(void*& start, void*& end, size_t num)//头删num个内存块对象，外部用start、end取得这些内存块对象 
+    {
+        assert(_size >= num);
+        start = end =  _freeList;
+        for(size_t i = 1; i < num; ++i)
+        {
+            end = NextObj(end);
+        }
+        _freeList = NextObj(end);
+
+        NextObj(end) = nullptr;
+        _size -= num;
     }
     inline void* Pop()//头删内存块，同时返回第一个内存块
     {
         assert(!Empty());
         void* ret = _freeList;
         _freeList = NextObj(_freeList);
+        _size--;
         return ret;
     }
     inline size_t& MaxSize()
@@ -36,8 +52,12 @@ public:
     {
         return _freeList == nullptr;
     }
-    
+    size_t Size()
+    {
+        return _size;
+    }
 private:
     void* _freeList = nullptr;
-    size_t _maxSize = 1;//一次性向CentralCache申请内存块对象的数量
+    size_t _maxSize = 1;//当前桶一次性向CentralCache申请内存块对象的数量
+    size_t _size = 0;
 };
