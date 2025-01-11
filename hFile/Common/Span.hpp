@@ -13,7 +13,9 @@ struct Span
     size_t _useCount = 0;//小块内存被分配给thread cache的计数
     void* _freeList = nullptr;//切好的小块内存自由链表
 
-    bool _is_use = false;//判断是否被使用    
+    bool _is_use = false;//判断是否被使用
+
+    size_t _objSize = 0;//这个Span要被切成多个 多大的内存块对象   切好的小对象大小
 };
 
 class SpanList
@@ -25,6 +27,7 @@ public:
         _head->_next = _head;
         _head->_prev = _head;
     }
+
     inline bool Empty()
     {
         return _head->_prev == _head;
@@ -51,11 +54,10 @@ public:
     {
         assert(!Empty());
         Span* ret = _head->_next;
-        Span* next = ret->_next;
-        _head->_next = next;
-        next->_prev = _head;
+        Erase(ret);
         return ret;
     }
+
     inline void Erase(Span* pos)
     {
     	//pos不要删掉，只是解开，然后还要还给page cache
@@ -65,15 +67,22 @@ public:
         Span* next = pos->_next;
         prev->_next = next;
         next->_prev = prev;
+        
+        pos->_prev = nullptr;
+        pos->_next = nullptr;
     }
 
     Span* begin()
     {
+        assert(_head != nullptr);
+        assert(_head->_next);
+        assert(_head->_next->_next);
         return _head->_next;   
     }
 
     Span* end()
     {
+        assert(_head);
         return _head;
     }
 public:

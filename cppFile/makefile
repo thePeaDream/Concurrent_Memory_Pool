@@ -1,5 +1,5 @@
-UnitTest:UnitTest.cpp ThreadCache/* PageCache/* Common/* CentralCache/* MyMalloc.cpp
-	g++ -o $@ $^ -std=c++11 -g
+UnitTest:UnitTest.cpp ThreadCache.cpp PageCache.cpp Common/* CentralCache.cpp MyMalloc.cpp
+	g++ -o $@ $^ -std=c++11 -pthread -g
 .PHONY:clean
 clean:
 	rm -f UnitTest

@@ -1,6 +1,5 @@
-#include "../../hFile/ThreadCache/ThreadCache.h"
-#include "../../hFile/CentralCache/CentralCache.h"
-
+#include "../hFile/ThreadCache/ThreadCache.h"
+#include "../hFile/CentralCache/CentralCache.h"
 
 void* ThreadCache::Allocate(size_t size)
 {
@@ -14,30 +13,6 @@ void* ThreadCache::Allocate(size_t size)
         return _freeLists[index].Pop();
     else
         return FetchFromCentralCache(index,alignSize);
-}
-
-void ThreadCache::Deallocate(void* ptr,size_t size)
-{
-    assert(ptr);
-    //还回来的内存块放到哪个自由链表桶里
-    size_t index = MapRule::Index(size);
-    size = MapRule::Align(size);
-    _freeLists[index].Push(ptr);
-
-    //如果当前桶长度(增加size成员) 超过 当前桶一次向Central Cache批量申请的内存块数量
-    //释放内存块给Central Cache
-    if(_freeLists[index].Size()>_freeLists[index].MaxSize())
-    {
-        FreeMemblockToCentralCache(_freeLists[index],size);
-    }
-}
-void ThreadCache::FreeMemblockToCentralCache(FreeList& list,size_t size)
-{
-    void* start = nullptr;
-    void* end = nullptr;
-    //将桶里头MaxSize个内存块删除，start end作为输出型参数获取
-    list.PopRange(start,end,list.MaxSize());
-    CentralCache::GetInstance()->ReleaseMemBlockToSpans(start,size);
 }
 
 void* ThreadCache::FetchFromCentralCache(size_t index,size_t alignSize)
@@ -63,7 +38,33 @@ void* ThreadCache::FetchFromCentralCache(size_t index,size_t alignSize)
         return start;
     else
     {
-        _freeLists[index].PushRange(NextObj(start),end,actualGetNum);
+        _freeLists[index].PushRange(NextObj(start),end,actualGetNum-1);
         return start;
     }
 }
+
+// void ThreadCache::Deallocate(void* ptr,size_t size)
+// {
+//     assert(ptr);
+//     //还回来的内存块放到哪个自由链表桶里
+//     size_t index = MapRule::Index(size);
+//     size = MapRule::Align(size);
+//     _freeLists[index].Push(ptr);
+
+//     //如果当前桶长度(增加size成员) 超过 当前桶一次向Central Cache批量申请的内存块数量
+//     //释放内存块给Central Cache
+//     if(_freeLists[index].Size()>_freeLists[index].MaxSize())
+//     {
+//         FreeMemblockToCentralCache(_freeLists[index],size);
+//     }
+// }
+
+// void ThreadCache::FreeMemblockToCentralCache(FreeList& list,size_t size)
+// {
+//     void* start = nullptr;
+//     void* end = nullptr;
+//     //将桶里头MaxSize个内存块删除，start end作为输出型参数获取
+//     list.PopRange(start,end,list.MaxSize());
+//     CentralCache::GetInstance()->ReleaseMemBlockToSpans(start,size);
+// }
+

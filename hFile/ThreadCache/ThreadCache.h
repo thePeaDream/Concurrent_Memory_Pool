@@ -33,4 +33,4 @@ private:
 };
 
 //线程本地存储，每个线程创建时都私有一份
-static __thread ThreadCache* pTLSThreadCache = nullptr;
+static thread_local ThreadCache* pTLSThreadCache = nullptr;

@@ -29,8 +29,9 @@ size_t MapRule::Align(size_t size)
         return _align(size,8*1024);
     }
     else
-        assert(false);
-
+    {
+        return _align(size,1<<PAGE_SHIFT);//按页对齐
+    }
 }
 //映射到哪一个自由链表桶里 / 该向哪个自由链表取内存块
 size_t MapRule::Index(size_t size)

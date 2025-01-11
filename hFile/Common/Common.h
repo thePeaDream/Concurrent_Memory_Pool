@@ -4,7 +4,14 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <vector>
+#include <atomic>
 
+#include <sys/mman.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -23,3 +30,13 @@ static const size_t NPAGES = 129;
 static const size_t NFREELIST = 208;
 
 typedef long long PAGE_ID;
+
+static inline void*& NextObj(void* obj)//给一个内存块对象，返回内存块前4/8byte的引用
+{
+    //条件断点
+    // if(obj == nullptr)
+    // {
+    //     int a = 1;
+    // }
+    return *(void**)obj;
+}

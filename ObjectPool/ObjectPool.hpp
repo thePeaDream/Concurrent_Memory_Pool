@@ -2,6 +2,7 @@
 //定长内存池实现
 #include <iostream>
 #include <unistd.h>
+#include <sys/mman.h>
 using namespace std;
 static size_t OnceAlloc = 1024 * 8; //一次向系统申请的空间为8KB
 
@@ -12,7 +13,7 @@ public:
     T* New()
     {
         //保证申请的对象大小至少跟指针一样大
-        size_t objSize = sizeof(T) < sizeof(void*) ? sizeof(void*):sizeof(T);
+        size_t objSize = sizeof(T) > sizeof(void*) ? sizeof(T):sizeof(void*);
         if(_freeList)//优先使用用户还回来的内存块对象
         {
             T* ret = (T*)_freeList;
@@ -23,7 +24,7 @@ public:
         {
             if(_leftSpace < objSize)//如果剩下空间不够分配一个内存块，就向系统申请
             {
-                _memory = myMalloc(OnceAlloc);
+                _memory = (char*)myMalloc(OnceAlloc);
                 if(_memory == nullptr)
                     throw bad_alloc();
                 _leftSpace += OnceAlloc;
@@ -54,22 +55,14 @@ public:
 private:
     void* myMalloc(size_t size)
     {   
-        //用brk向系统申请
-
-        //当前数据段末尾
-        void* old_brk = sbrk(0);
-        //要设置的数据段新末尾
-        void* new_brk = old_brk + size;
-        //用brk函数来调整堆区最高位置
-        if (brk(new_brk) == -1)
-        {
-            return nullptr;
-        }
-        //此时，old_brk和new_brk之间的空间就是新申请到的内存空间
-        return old_brk;
+        //用mmap向系统申请
+        void* ret = mmap(nullptr,size,PROT_READ|PROT_WRITE,MAP_ANONYMOUS|MAP_PRIVATE,-1,0);
+        if(ret == MAP_FAILED) return nullptr;
+        return ret;
     }
+
 private:
-    char* _memory;//存储向系统申请的大块内存
-    size_t _leftSpace;//大块内存剩余可分配空间
-    void* _freeList;//自由链表，管理用户释放回来的内存块对象，用链表管理起来
+    char* _memory = nullptr;//存储向系统申请的大块内存
+    size_t _leftSpace = 0;//大块内存剩余可分配空间
+    void* _freeList = nullptr;//自由链表，管理用户释放回来的内存块对象，用链表管理起来
 };

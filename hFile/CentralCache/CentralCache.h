@@ -19,7 +19,7 @@ private:
 
     //切分成size大小内存块的span不够，要向Page Cache获取 管理几页 的span
     size_t NumPage(size_t size);
-private:
+public:
     SpanList _spanLists[208];
 private:
     //单例模式实现

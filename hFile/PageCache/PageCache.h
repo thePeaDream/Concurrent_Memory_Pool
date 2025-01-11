@@ -1,6 +1,7 @@
 #pragma once
 #include "../Common/Common.h"
 #include "../Common/Span.hpp"
+#include "../../ObjectPool/ObjectPool.hpp"
 
 class PageCache
 {
@@ -23,6 +24,11 @@ public:
         //此时，old_brk和new_brk之间的空间就是新申请到的内存空间
         return old_brk;
     }
+    static bool myFree(void* ptr)
+    {
+        if(brk(ptr) == -1) return false;
+        return true;
+    }
 
     //获取内存块对象到Span的映射
     Span* MemBlockToSpan(void* object);
@@ -33,6 +39,7 @@ public:
 private:
     SpanList _spanLists[NPAGES];
     std::unordered_map<PAGE_ID,Span*> _pageShiftSpan;
+    ObjectPool<Span> _spanPool;
 private:
     //单例模式
     static PageCache _pageCacheInstance;
