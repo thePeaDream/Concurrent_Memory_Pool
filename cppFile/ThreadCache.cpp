@@ -3,12 +3,15 @@
 
 void* ThreadCache::Allocate(size_t size)
 {
+    //小于MAX_BYTES的空间申请向ThreadCache
+    assert(size <= MAX_BYTES && size > 0);
     //对齐以后实际分配的内存块大小
     size_t alignSize = MapRule::Align(size);
 
     //对应的自由链表桶下标
     size_t index = MapRule::Index(size);
 
+    
     if(!_freeLists[index].Empty())
         return _freeLists[index].Pop();
     else
@@ -31,7 +34,9 @@ void* ThreadCache::FetchFromCentralCache(size_t index,size_t alignSize)
     void* end = nullptr;
 
     //实际获取的内存块数量
+
     size_t actualGetNum = CentralCache::GetInstance()->FetchRangeObj(start,end,actualNum,alignSize);
+
     assert(actualGetNum >= 1 );
 
     if(start == end)

@@ -2,99 +2,73 @@
 
 PageCache PageCache::_pageCacheInstance;
 
-//把n页的Span，切分成 n1页的Span 和 n2页的Span
-//n1页的Span返回，n2页的Span挂载到PageCache的spanList[n2]上
-Span* PageCache::Split(size_t n, size_t n1, size_t n2)
-{
-    assert(n == n1+n2);
-    //1 nSpan要弹出来，被切分
-    Span* nSpan = _spanLists[n].PopFront();
-    // Span* n1Span = new Span;
-    // Span* n2Span = new Span;
-    Span* n1Span = _spanPool.New();
-    Span* n2Span = _spanPool.New();
-    
-    //2 用页号切分
-    //n1Span的起始页号为 nSpan->_pageId;
-    n1Span->_pageId = nSpan->_pageId;
-    n1Span->_n = n1;
-    //n2Span的起始页号为
-    //nSpan->_pageId + n1;
-    n2Span->_pageId = nSpan->_pageId + n1;
-    n2Span->_n = n2;
-
-    //3 n2页的Span挂载到PageCache的spanList[n2]上
-    _spanLists[n2].PushFront(n2Span);
-    
-    //存储n2Span的首尾页的映射关系到哈希表里
-    //方便page cache回收内存时，进行合并查找
-    _idSpanMap[n2Span->_pageId] = n2Span;
-    _idSpanMap[n2Span->_pageId+n2-1] = n2Span;
-
-    _spanPool.Delete(nSpan);
-
-    //将要使用的Span和其管理的页号，建立映射，方便Central Cache回收内存时，查找对应Span
-    for(PAGE_ID i = 0; i < n1Span->_n; ++i)
-    {
-        _idSpanMap[n1Span->_pageId+i] = n1Span;
-    }
-    return n1Span;
-}
-
 //弹出一个k页的span给 用户 / CentralCache
 Span* PageCache::NewSpan(size_t k)
 {
-    assert(k > 0);
-    //大于128页直接向堆申请
-    if(k >= NPAGES)
-    {
-        //直接向系统申请k页返回，不会挂载到PageCache里
-        void* ptr = SystemAlloc(k);
-        Span* span = _spanPool.New();
-        span->_pageId = (PAGE_ID)ptr >> PAGE_SHIFT;
-        span->_n = k;
-        span->_objSize = k << PAGE_SHIFT;
-        _idSpanMap[span->_pageId] = span;
-        return span;
-    }
-    else
-    {
-        //1 先去_spanLists[k]去找span
-        if(!_spanLists[k].Empty())
-        {
-            Span* ret = _spanLists[k].PopFront();
-            //将要使用的Span和其管理的页号，建立映射，方便Central Cache回收内存时，查找对应Span
-            for(PAGE_ID i = 0; i < ret->_n; ++i)
-            {
-                _idSpanMap[ret->_pageId+i] = ret;
-            }
-            return ret;
-        }
+	assert(k > 0);
+	if (k >= NPAGES)
+	{
+		//直接找堆要空间
+		void* ptr = SystemAlloc(k);
+		//Span* ret = new Span;
+		Span* ret = _spanPool.New();
+		ret->_pageId = (PAGE_ID)ptr >> PAGE_SHIFT;
+		ret->_n = k;
+		//_idSpanMap[ret->_pageId] = ret;
+		_idSpanMap.set(ret->_pageId, ret);
+		return ret;
+	}
+	//先检查当前页是否有span
+	if (!_spanLists[k].Empty())
+	{
+		Span* ret = _spanLists[k].PopFront();
+		//建立id和span*的映射，方便CentralCache回收小块内存时，查找对应的Span
+		for (PAGE_ID i = 0; i < ret->_n; ++i)
+		{
+			_idSpanMap.set(ret->_pageId + i, ret);
+		}
+		return ret;
+	}
+	// 检查后面的桶里面有没有span，如果有可以把它切分
+	for (size_t i = k + 1; i < NPAGES; ++i)
+	{
+		if (!_spanLists[i].Empty())
+		{
+			//开始切分 k n-k
+			//k页的span返回给central cache n-k页的span挂到第n-k个桶里
+			Span* kSpan = _spanPool.New();
+			Span* nSpan = _spanLists[i].PopFront();
 
-        //2 若没有，往后面的桶里找span(n页)，把它切分成 k页 的 span
-        for(size_t n = k+1; n < NPAGES; ++n)
-        {
-            if(!_spanLists[n].Empty())
-            {
-                //切分成 k页  和  (n-k)页 的span
-                //k页的span返回，(n-k)页的span挂载到第(n-k)号桶
-                return Split(n,k,n-k);
-            }
-        }
-    
-        //3 若Page Cache没有合适的span了，就向系统申请一块NPAGE - 1页的Span
-        void* memory = SystemAlloc(NPAGES - 1);
-        if(memory == nullptr)
-            throw std::bad_alloc();
-        Span* newSpan = _spanPool.New();
-        newSpan->_pageId = (PAGE_ID)memory >> 13;
-        newSpan->_n = NPAGES - 1;
+			//在nSpan的头部切一个k页下来
+			kSpan->_n = k;
+			kSpan->_pageId = nSpan->_pageId;
 
-        _spanLists[NPAGES-1].PushFront(newSpan);
+			nSpan->_pageId += k;
+			nSpan->_n -= k;
 
-        //4 切分新申请的span
-        return Split(newSpan->_n,k,newSpan->_n-k);
-    }
+			_spanLists[nSpan->_n].PushFront(nSpan);
+			//存储nSpan的起始和结束页号与nSpan*的映射，方便合并
+			_idSpanMap.set(nSpan->_pageId, nSpan);
+			_idSpanMap.set(nSpan->_pageId + nSpan->_n - 1,nSpan);
+			//建立id和span*的映射，方便CentralCache回收小块内存时，查找对应的Span
+			for (PAGE_ID i = 0; i < kSpan->_n; ++i)
+			{
+				_idSpanMap.set(kSpan->_pageId+i, kSpan);
+			}
+			return kSpan;
+		}
+	}
+	//走到这里说明后面没有大页的span了，向系统申请128页的span
+	Span* bigSpan = _spanPool.New();
+	void* ptr = SystemAlloc(NPAGES-1);
+
+
+	bigSpan->_pageId = ((PAGE_ID)ptr >> PAGE_SHIFT);
+
+	bigSpan->_n = NPAGES - 1;
+
+	_spanLists[NPAGES - 1].PushFront(bigSpan);
+	return NewSpan(k);
 }
 //获取内存块对象到Span的映射
 Span* PageCache::MemBlockToSpan(void* object)
@@ -102,15 +76,14 @@ Span* PageCache::MemBlockToSpan(void* object)
     //先算出页号
     PAGE_ID pageId = (PAGE_ID)object >> PAGE_SHIFT;
     //把锁对象给了RAII类，出了作用域自动解锁
-    std::unique_lock<std::mutex> lock(_mtx);
+    //std::unique_lock<std::mutex> lock(_mtx);
 
     //在哈希表里找映射的Span*
-    std::unordered_map<PAGE_ID,Span*>::iterator ret = _idSpanMap.find(pageId);
-    if(ret != _idSpanMap.end())
-    {
-        return ret->second;
-    }
-    return nullptr;
+    Span* ret = (Span*)_idSpanMap.get(pageId);
+    if(ret != nullptr)
+		return ret;
+	assert(false);
+	return nullptr;
 }
 
 void PageCache::ReleaseSpanToPageCache(Span* span)
@@ -129,17 +102,15 @@ void PageCache::ReleaseSpanToPageCache(Span* span)
     while(true)
     {
         PAGE_ID aheadId = span->_pageId - 1;
-        auto it = _idSpanMap.find(aheadId);
-        if(it == _idSpanMap.end()) break; //前面的页号不存在
-        if(it->second->_is_use == true) break; //前面的span正在被使用
-        if(it->second->_n + span->_n >= NPAGES) break; //合并出超过NPAGES页的Span,没办法管理,不能合并
+        Span* aheadSpan = (Span*)_idSpanMap.get(aheadId);
+        if(aheadSpan == nullptr) break; //前面的页号不存在
+        if(aheadSpan->_isUse == true) break; //前面的span正在被使用
+        if(aheadSpan->_n + span->_n >= NPAGES) break; //合并出超过NPAGES页的Span,没办法管理,不能合并
         
-        Span* aheadSpan = it->second;
         span->_n += aheadSpan->_n;
         span->_pageId = aheadSpan->_pageId;
         _spanLists[aheadSpan->_n].Erase(aheadSpan);
 
-        //_idSpanMap.erase()
         _spanPool.Delete(aheadSpan);
     }
 
@@ -147,23 +118,20 @@ void PageCache::ReleaseSpanToPageCache(Span* span)
     while(true)
     {
         PAGE_ID behindId = span->_pageId + span->_n;
-        auto it = _idSpanMap.find(behindId);
-        if(it == _idSpanMap.end()) break; //后面的页号不存在
-        if(it->second->_is_use == true) break; //后面的span正在被使用
-        if(it->second->_n + span->_n >= NPAGES) break; //合并出超过NPAGES页的Span,没办法管理,不能合并
+        Span* behindSpan = (Span*)_idSpanMap.get(behindId);
+        if(behindSpan == nullptr) break; //后面的页号不存在
+        if(behindSpan->_isUse == true) break; //后面的span正在被使用
+        if(behindSpan->_n + span->_n >= NPAGES) break; //合并出超过NPAGES页的Span,没办法管理,不能合并
         
-        Span* behindSpan = it->second;
         span->_n += behindSpan->_n;
         _spanLists[behindSpan->_n].Erase(behindSpan);
-
-        //_pageShiftSpan.erase()
         _spanPool.Delete(behindSpan);
     }
 
     //挂载到PageCache的桶里
     _spanLists[span->_n].PushFront(span);
     //将首尾页号和span的映射存起来
-    _idSpanMap[span->_pageId] = span;
-    _idSpanMap[span->_pageId+span->_n-1] = span;
-    span->_is_use = false;
+    _idSpanMap.set(span->_pageId , span);
+    _idSpanMap.set(span->_pageId+span->_n-1, span);
+    span->_isUse = false;
 }

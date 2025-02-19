@@ -1,9 +1,7 @@
-#include "../hFile/Common/MapRule.hpp"
-#include "../hFile/Common/FreeList.hpp"
-#include "../hFile/Common/Span.hpp"
 #include "../hFile/CentralCache.h"
 #include "../hFile/PageCache.h"
 #include "../hFile/ThreadCache.h"
+
 
 CentralCache CentralCache::_centralCacheInstance;
 
@@ -80,36 +78,34 @@ Span* CentralCache::GetOneSpan(SpanList& list,size_t size)
 
     size_t page = NumPage(size);//通过要切分的内存块大小，确定要获取几页的span
     Span* span = PageCache::GetInstance()->NewSpan(page);
-    span->_is_use = true;
+    span->_isUse = true;
     span->_objSize = size;
-    span->_n = page;
-    span->_freeList = nullptr;
 
     PageCache::GetInstance()->_mtx.unlock();
     
     //注意：获取的这个span，只有当前线程可以访问到，对获取的span进行切分时，可以先不加锁
     //多个线程要竞争时才需要加锁
-
+    
     //3 切分span成小块内存，挂载到_freeList里
     char* start = (char*)((span->_pageId) << PAGE_SHIFT);//通过页号算出管理页起始地址
-
     size_t sumSize = (span->_n) << PAGE_SHIFT; // 通过页数算出大块内存字节数 <<13就是 *2^13
     char* end = start + sumSize;
     span->_freeList = start;
 
     //当前要尾插的内存块
-    char* cur = start + size;
+    start += size;
     //已挂载内存块的尾部
-    char* tail = start;
-    while(cur < end)
+    void* tail = span->_freeList;
+    while(start < end)
     {
-        NextObj(tail) = cur;
-        tail = cur;
-        cur += size;
+        NextObj(tail) = start;
+        tail = start;
+        start += size;
     }
     NextObj(tail) = nullptr;
     //切分好以后，往spanlist里插入span，需要加锁，因为此时可能有其他线程在获取span
     //切好span,把span挂桶里去时，再加锁
+    
     list._mtx.lock();
     list.PushFront(span);
     return span;
@@ -146,8 +142,6 @@ void CentralCache::ReleaseMemBlockToSpans(void* start,size_t size)
             span->_next = nullptr;
             span->_prev = nullptr;
             span->_objSize = 0;
-            //唯一不能动的是页号和页数
-
             //解桶锁，让其他线程的Thread Cache也能在这个桶里申请/释放内存块，当前线程要还Span给PageCache,暂时不会访问这个桶
             _spanLists[index]._mtx.unlock();
             //将span返回给PageCache

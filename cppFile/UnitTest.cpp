@@ -1,4 +1,4 @@
-#include "../hFile/MyMalloc.hpp"
+#include "../hFile/MyMalloc.h"
 #include <iostream>
 
 
@@ -75,132 +75,134 @@
 //     cerr << "释放成功"<<endl;
 // }
 
-//基准测试
-//ntimes：一轮申请多少次/释放多少次
-//nthreads：线程数
-//rounds:跑多少轮
-// void TestBetchmarkMalloc(size_t ntimes,size_t nthreads,size_t rounds)
+
+// void TestBetchmarkOnlyConcurrentMalloc(size_t ntimes,size_t nthreads,size_t rounds)
 // {
 //     std::vector<std::thread> vthread(nthreads);
 //     std::atomic<size_t> malloc_time(0);
-//     std::atomic<size_t> free_time(0);
     
 //     for(size_t i = 0; i < nthreads;++i)
 //     {
 //         vthread[i] = std::thread(
 //             [&,i](){
-//                 std::vector<void*> v;
-//                 v.reserve(ntimes);
 //                 for(size_t j = 0; j < rounds; ++j)
 //                 {
 //                     size_t begin1 = clock();
 //                     for(size_t z = 0; z < ntimes; ++z)
 //                     {
-//                         v.push_back(malloc(100));
+//                         void* ptr = ConcurrentAlloc((16 + z) % 8192 + 1);
 //                     }
-//                     size_t end1 = clock();
-
-//                     size_t begin2 = clock();
-//                     for(size_t z = 0; z < ntimes; ++z)
-//                     {
-//                         free(v[z]);
-//                     }
-//                     v.clear();
-//                     size_t end2 = clock();
+//                     size_t end1 = clock();                            
 //                     malloc_time += (end1-begin1);
-//                     free_time += (end2-begin2);
 //                 }
-//             }
-//         );
+
+//             });
 //     }
 //     for(auto& t : vthread)
 //     {
 //         t.join();
 //     }
-//     printf("%u个线程并发执行%u轮次，每轮申请%u次，花费%u ms\n",nthreads,rounds,ntimes,malloc_time.load());
-//     printf("%u个线程并发执行%u轮次，每轮释放%u次，花费%u ms\n",nthreads,rounds,ntimes,free_time.load());
+//     printf("%lu个线程并发执行%lu轮次，每轮申请%lu次，花费%lu ms\n",nthreads,rounds,ntimes,malloc_time.load());
 // }
 
-// void TestBetchmarkMyMalloc(size_t ntimes,size_t nthreads,size_t rounds)
-// {
-//     std::vector<std::thread> vthread(nthreads);
-//     std::atomic<size_t> malloc_time(0);
-//     std::atomic<size_t> free_time(0);
-    
-//     for(size_t i = 0; i < nthreads;++i)
-//     {
-//         vthread[i] = std::thread(
-//             [&,i](){
-//                 std::vector<void*> v;
-//                 v.reserve(ntimes);
-//                 for(size_t j = 0; j < rounds; ++j)
-//                 {
-//                     size_t begin1 = clock();
-//                     for(size_t z = 0; z < ntimes; ++z)
-//                     {
-//                         v.push_back(ConcurrentAlloc(10));
-//                     }
-//                     size_t end1 = clock();
 
-//                     size_t begin2 = clock();
-//                     for(size_t z = 0; z < ntimes; ++z)
-//                     {
-//                         ConcurrentFree(v[z]);
-//                     }
-//                     v.clear();
-//                     size_t end2 = clock();
-//                     malloc_time += (end1-begin1);
-//                     free_time += (end2-begin2);
-//                 }
-//             }
-//         );
-//     }
-//     for(auto& t : vthread)
-//     {
-//         t.join();
-//     }
-//     printf("%u个线程并发执行%u轮次，每轮申请%u次，花费%u ms\n",nthreads,rounds,ntimes,malloc_time.load());
-//     printf("%u个线程并发执行%u轮次，每轮释放%u次，花费%u ms\n",nthreads,rounds,ntimes,free_time.load());
-// }
-
-void TestBetchmarkOnlyMalloc(size_t ntimes,size_t nthreads,size_t rounds)
+//ntimes 一轮申请和释放内存的次数
+//round 跑多少轮
+//nworks 线程数
+void BenchmarkMalloc(size_t ntimes, size_t nworks, size_t rounds)
 {
-    std::vector<std::thread> vthread(nthreads);
-    std::atomic<size_t> malloc_time(0);
-    
-    for(size_t i = 0; i < nthreads;++i)
-    {
-        vthread[i] = std::thread(
-            [&,i](){
-                for(size_t j = 0; j < rounds; ++j)
-                {
-                    size_t begin1 = clock();
-                    for(size_t z = 0; z < ntimes; ++z)
-                    {
-                        void* ptr = ConcurrentAlloc(8);
-                    }
-                    size_t end1 = clock();                            
-                    malloc_time += (end1-begin1);
-                }
-                //cout << "一个线程运行完"<<endl;
-            }
-        );
-    }
-    for(auto& t : vthread)
-    {
-        t.join();
-    }
-    printf("%lu个线程并发执行%lu轮次，每轮申请%lu次，花费%lu ms\n",nthreads,rounds,ntimes,malloc_time.load());
+	vector<std::thread> vthread(nworks);
+	atomic<size_t> malloc_costtime(0);
+	atomic<size_t> free_costtime(0);
+	
+	for (size_t k = 0; k < nworks; ++k)
+	{
+		vthread[k] = thread([&, k]() {
+			vector<void*> v;
+			v.reserve(ntimes);
+			for (size_t j = 0; j < rounds; ++j)
+			{
+				size_t begin1 = clock();
+				for (size_t i = 0; i < ntimes; i++)
+				{
+					//v.push_back(malloc(16));
+					v.push_back(malloc((16+i)%8192+1));
+				}
+				size_t end1 = clock();
+
+				size_t begin2 = clock();
+				for (size_t i = 0; i < ntimes; i++)
+				{
+					free(v[i]);
+				}
+				size_t end2 = clock();
+				v.clear();
+
+				malloc_costtime += (end1 - begin1);
+				free_costtime += (end2 - begin2);
+			}
+			});
+	}
+	for (auto& t : vthread)
+	{
+		t.join();
+	}
+	printf("%u个线程并发执行%u轮次，每轮申请%u次，花费%u ms\n", nworks, rounds, ntimes, malloc_costtime.load());
+	printf("%u个线程并发执行%u轮次，每轮释放%u次，花费%u ms\n", nworks, rounds, ntimes, free_costtime.load());
+	printf("%u个线程并发执行%u轮次，每轮申请&释放%u次，总计花费%u ms\n", nworks, rounds, ntimes, malloc_costtime.load()+free_costtime.load());
 }
+
+void BenchmarkConcurrentMalloc(size_t ntimes, size_t nworks, size_t rounds)
+{
+	vector<std::thread> vthread(nworks);
+	atomic<size_t> malloc_costtime(0);
+	atomic<size_t> free_costtime(0);
+
+	for (size_t k = 0; k < nworks; ++k)
+	{
+		vthread[k] = thread([&, k]() {
+			vector<void*> v;
+			v.reserve(ntimes);
+			for (size_t j = 0; j < rounds; ++j)
+			{
+				size_t begin1 = clock();
+				for (size_t i = 0; i < ntimes; i++)
+				{
+					//v.push_back(ConcurrentAlloc(16));
+					v.push_back(ConcurrentAlloc((16 + i) % 8192 + 1));
+				}
+				size_t end1 = clock();
+
+				size_t begin2 = clock();
+				for (size_t i = 0; i < ntimes; i++)
+				{
+					ConcurrentFree(v[i]);
+				}
+				size_t end2 = clock();
+				v.clear();
+
+				malloc_costtime += (end1 - begin1);
+				free_costtime += (end2 - begin2);
+			}
+			});
+	}
+	for (auto& t : vthread)
+	{
+		t.join();
+	}
+	printf("%u个线程并发执行%u轮次，每轮申请%u次，花费%u ms\n", nworks, rounds, ntimes, malloc_costtime.load());
+	printf("%u个线程并发执行%u轮次，每轮释放%u次，花费%u ms\n", nworks, rounds, ntimes, free_costtime.load());
+	printf("%u个线程并发执行%u轮次，每轮申请&释放%u次，总计花费%u ms\n", nworks, rounds, ntimes, malloc_costtime.load() + free_costtime.load());
+}
+
 
 int main()
 {
     // TestConcurrentAlloc2();
     // TestAddressShift();
-    //TestConcurrentFree();
-    //TestBetchmarkMalloc(10000,1,32);
-    //cout << endl << endl;
-    TestBetchmarkOnlyMalloc(1,1,1);
-
-    return 0;
+    // TestConcurrentFree();
+	BenchmarkMalloc(10000, 3, 3);
+	cout << endl << endl;
+	BenchmarkConcurrentMalloc(10000, 3, 3);
+	return 0;
 }
