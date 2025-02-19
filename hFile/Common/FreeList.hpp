@@ -1,5 +1,5 @@
 #pragma once
-#include "../Common/Common.h"
+#include "Common.h"
 
 
 //管理切分好的小内存块对象 自由链表

@@ -1,8 +1,5 @@
-#include "../ObjectPool/ObjectPool.hpp"
-#include "../hFile/MyMalloc.h"
-#include "../hFile/ThreadCache/ThreadCache.h"
-#include "../hFile/CentralCache/CentralCache.h"
-#include "../hFile/PageCache/PageCache.h"
+#include "../hFile/MyMalloc.hpp"
+#include <iostream>
 
 
 // void TestConcurrentAlloc()
@@ -180,7 +177,7 @@ void TestBetchmarkOnlyMalloc(size_t ntimes,size_t nthreads,size_t rounds)
                     size_t begin1 = clock();
                     for(size_t z = 0; z < ntimes; ++z)
                     {
-                        ConcurrentAlloc(8);
+                        void* ptr = ConcurrentAlloc(8);
                     }
                     size_t end1 = clock();                            
                     malloc_time += (end1-begin1);
@@ -193,7 +190,7 @@ void TestBetchmarkOnlyMalloc(size_t ntimes,size_t nthreads,size_t rounds)
     {
         t.join();
     }
-    printf("%u个线程并发执行%u轮次，每轮申请%u次，花费%u ms\n",nthreads,rounds,ntimes,malloc_time.load());
+    printf("%lu个线程并发执行%lu轮次，每轮申请%lu次，花费%lu ms\n",nthreads,rounds,ntimes,malloc_time.load());
 }
 
 int main()
@@ -203,6 +200,7 @@ int main()
     //TestConcurrentFree();
     //TestBetchmarkMalloc(10000,1,32);
     //cout << endl << endl;
-    TestBetchmarkOnlyMalloc(15888,1,1);
+    TestBetchmarkOnlyMalloc(1,1,1);
+
     return 0;
 }

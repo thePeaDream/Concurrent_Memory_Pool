@@ -67,22 +67,15 @@ public:
         Span* next = pos->_next;
         prev->_next = next;
         next->_prev = prev;
-        
-        pos->_prev = nullptr;
-        pos->_next = nullptr;
     }
 
     Span* begin()
     {
-        assert(_head != nullptr);
-        assert(_head->_next);
-        assert(_head->_next->_next);
         return _head->_next;   
     }
 
     Span* end()
     {
-        assert(_head);
         return _head;
     }
 public:

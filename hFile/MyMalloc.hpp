@@ -1,8 +1,10 @@
-#include "../hFile/MyMalloc.h"
-#include "../hFile/PageCache/PageCache.h"
-#include "../ObjectPool/ObjectPool.hpp"
+#pragma once
+#include "ThreadCache.h"
+#include "PageCache.h"
+#include "ObjectPool.hpp"
+
 //申请size byte 空间
-void* ConcurrentAlloc(size_t size)
+static void* ConcurrentAlloc(size_t size)
 {
     if(size <= MAX_BYTES)
     {
@@ -30,19 +32,22 @@ void* ConcurrentAlloc(size_t size)
     }   
 }
 
-// //释放内存块
-// void ConcurrentFree(void* ptr)
-// {
-//     Span* span = PageCache::GetInstance()->MemBlockToSpan(ptr);
+//释放内存块对象
+static void ConcurrentFree(void* ptr)
+{
+    Span* span = PageCache::GetInstance()->MemBlockToSpan(ptr);
 
-//     if(span->_objSize > MAX_BYTES)
-//     {
-//         PageCache::GetInstance()->_mtx.lock();
-//         PageCache::GetInstance()->ReleaseSpanToPageCache(span);
-//         PageCache::GetInstance()->_mtx.unlock();
-//     }
-//     else
-//     {
-//         pTLSThreadCache->Deallocate(ptr,span->_objSize);
-//     } 
-// }
+    //如果 内存块对象大小 大于MAX_BYTES,说明是直接向PageCache申请的Span
+    if(span->_objSize > MAX_BYTES)
+    {
+        PageCache::GetInstance()->_mtx.lock();
+        PageCache::GetInstance()->ReleaseSpanToPageCache(span);
+        PageCache::GetInstance()->_mtx.unlock();
+    }
+    else
+    {
+        assert(pTLSThreadCache);
+        pTLSThreadCache->Deallocate(ptr,span->_objSize);
+    } 
+}
+

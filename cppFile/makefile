@@ -1,4 +1,4 @@
-UnitTest:UnitTest.cpp ThreadCache.cpp PageCache.cpp Common/* CentralCache.cpp MyMalloc.cpp
+UnitTest:UnitTest.cpp ThreadCache.cpp PageCache.cpp CentralCache.cpp
 	g++ -o $@ $^ -std=c++11 -pthread -g
 .PHONY:clean
 clean:

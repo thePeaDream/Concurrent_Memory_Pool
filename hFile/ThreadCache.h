@@ -1,7 +1,6 @@
 #pragma once
-#include "../Common/Common.h"
-#include "FreeList.hpp"
-#include "../Common/MapRule.h"
+#include "Common/FreeList.hpp"
+#include "Common/MapRule.hpp"
 class ThreadCache
 {
 public:
@@ -10,11 +9,11 @@ public:
     void Deallocate(void* ptr,size_t size);
 
     //thread cache向中心缓存一次批量申请 内存块对象 的数量上限
-    static size_t GetMemBlockNumberTopLimit(size_t size)
+    static size_t GetMemBlockNumberTopLimit(size_t objSize)
     {
-        if(size == 0) return 0;
-        //[2,512],一次申请多少个对象
-        int num = MAX_BYTES / size;
+        if(objSize == 0) return 0;
+        //[2,512],一次申请多少个内存块对象
+        int num = MAX_BYTES / objSize;
         //大对象，一次批量申请的上限低
         if(num < 2)
             num = 2;
