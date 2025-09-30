@@ -104,17 +104,26 @@ public:
     {
         return iterator(_head);
     }
+
+    void Erase(Span* pos)
+    {
+        assert(pos);
+        assert(!Empty());
+        Span* prev = pos->prev;
+        Span* next = pos->next;
+        prev->next = next;
+        next->prev = prev;
+        pos->next = nullptr;
+        pos->prev = nullptr;
+        --_size;
+    }
+
     Span* PopFront()
     {
         //头删，返回从链表中被删除的Span*
        assert(_size > 0);
        Span* del = _head->next;
-       Span* newHead = del->next;
-       _head->next = newHead;
-       newHead->prev = _head;
-       del->next = nullptr;
-       del->prev = nullptr;
-       --_size;
+       Erase(del);
        return del;
     }
     void PushFront(Span* newSpan)

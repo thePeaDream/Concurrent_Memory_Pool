@@ -7,12 +7,13 @@
 
 class PageCache
 {
+public:
+    static const size_t NPAGES = 128; 
+    std::mutex _mtx;
 private:
     //第0个占位
-    static const size_t NPAGES = 128; 
     SpanList _spanLists[NPAGES + 1];
-public:
-    std::mutex _mtx;
+    unordered_map<PAGE_ID,Span*> _mapIdToSpan;
 //单例模式
 private:
     PageCache(){}
@@ -27,5 +28,11 @@ public:
 public:
     //获取一个k页的span
     Span* NewSpan(size_t k);
+
+    //根据内存块对象，找到对应的Span*
+    Span* ObjectToSpan(void* obj);
+    
+    //CentralCache还span对象给PageCache
+    void ReleaseSpanToPageCache(Span* span);
 };
 #endif

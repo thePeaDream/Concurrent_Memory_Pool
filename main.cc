@@ -2,11 +2,13 @@
 #include "./UnitTest/TestObjectPool.h"
 #include "./UnitTest/TestAlignMap.h"
 #include "./UnitTest/TestMalloc.h"
+#include "./UnitTest/TestMallocFree.h"
 int main()
 {
     //TestSystemAllocFree();
     // TestObjectPool();
     //TestAlignMap();
-    TestMalloc();
+    // TestMalloc();
+    TestMallocFree();
     return 0;
 }

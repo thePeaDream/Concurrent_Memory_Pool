@@ -35,6 +35,16 @@ public:
         _freeList = start;
         _size += n;
     }
+    void PopRange(void*& start,void*& end,size_t n)
+    {
+        assert(_size >= n);
+        start = end = _freeList;
+        //end往后走n-1步
+        for(size_t i = 1; i < n ; ++i)
+            end = NextObj(end);
+        _freeList = NextObj(end);
+        NextObj(end) = nullptr;
+    }
 
     size_t& AllocSize()
     {

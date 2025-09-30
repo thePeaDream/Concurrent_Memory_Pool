@@ -17,15 +17,48 @@ size_t CentralCache::FetchRangeObject(void*& start,void*& end,size_t n,size_t al
     //注意一个span可能没有这么多的小内存块对象了
     for(size_t i = 0; i < n - 1; ++i)
     {
-        if(NextObj(end) == nullptr) 
-            break;
+        if(NextObj(end) == nullptr) break;
         ++ret;
         end = NextObj(end);
     }
     span->freeList = NextObj(end);
     NextObj(end) = nullptr;
+    span->useCount += ret;
     _spanLists[index]._mtx.unlock();
     return ret;
+}
+void CentralCache::ReleaseListToSpans(void* start,size_t alignSize)
+{
+    //1 先算出要把内存块对象释放回哪一个桶
+    size_t index = AlignMap::Mapping(alignSize);
+
+    //2 加桶锁，遍历整个自由链表的内存块对象，将它们头插入到对应的Span*的freelist中
+    _spanLists[index]._mtx.lock();
+    while(start)
+    {
+        void* next = NextObj(start);
+        //获取内存块对象对应的span
+        Span* span = PageCache::GetInstance()->ObjectToSpan(start);
+        //头插内存块对象
+        NextObj(start) = span->freeList;
+        span->freeList = start;
+        start = next;
+        --span->useCount;
+        //使用计数为0，所有的内存块对象都释放回来了
+        if(span->useCount == 0)
+        {
+            //3 如果某个span里，所有内存块对象都回来了，使用计数 = 0，就将该span还回给PageCache合并，缓解内存碎片问题
+            _spanLists[index].Erase(span);
+            span->freeList = nullptr;
+            span->objSize = 0;
+            _spanLists[index]._mtx.unlock();
+            PageCache::GetInstance()->_mtx.lock();
+            PageCache::GetInstance()->ReleaseSpanToPageCache(span);
+            PageCache::GetInstance()->_mtx.unlock();
+            _spanLists[index]._mtx.lock();
+        }
+    }
+    _spanLists[index]._mtx.unlock();
 }
 
 Span* CentralCache::GetOneSpan(SpanList& spanList,size_t alignSize)

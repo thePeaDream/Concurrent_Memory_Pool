@@ -21,7 +21,10 @@ public:
         return &_instance;
     }
 public:
+    //ThreadCache申请内存块对象的调用接口
     size_t FetchRangeObject(void*& start,void*& end,size_t n,size_t alignSize);
+    //ThreadCache释放内存块对象的调用接口
+    void ReleaseListToSpans(void* start,size_t alignSize);
 private:
     //获取一个非空的span
     Span* GetOneSpan(SpanList& index,size_t alignSize);
@@ -39,6 +42,9 @@ private:
     }
     //切分Span的大页空间成多个小内存块对象，用链表组织起来
     void SplitSpan(Span* span,size_t objSize);
+
+    
+    
 };
 
 

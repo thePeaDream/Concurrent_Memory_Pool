@@ -33,6 +33,7 @@ private:
     //index:是哪个自由链表/桶需要申请内存块对象
     //alignSize:申请的内存块对象大小
     void FetchObjectFromCentralCache(size_t index,size_t alignSize);
+    void CheckListLength(FreeList& freelist,size_t alignSize);
 };
 
 
