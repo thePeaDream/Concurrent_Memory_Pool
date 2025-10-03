@@ -4,6 +4,7 @@
 #include "../Common/Span.hpp"
 #include "../Common/Common.h"
 #include "../Common/SystemAllocFree.h"
+#include "../Common/ObjectPool.hpp"
 
 class PageCache
 {
@@ -14,6 +15,7 @@ private:
     //第0个占位
     SpanList _spanLists[NPAGES + 1];
     unordered_map<PAGE_ID,Span*> _mapIdToSpan;
+    ObjectPool<Span> _objectPool;
 //单例模式
 private:
     PageCache(){}

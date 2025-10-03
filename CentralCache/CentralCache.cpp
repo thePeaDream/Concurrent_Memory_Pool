@@ -5,15 +5,16 @@ CentralCache CentralCache::_instance;
 size_t CentralCache::FetchRangeObject(void*& start,void*& end,size_t n,size_t alignSize)
 {
     size_t index = AlignMap::Mapping(alignSize);
-    //加桶锁
+
     _spanLists[index]._mtx.lock();
+    
     //从SpanList中，找到一个非空的Span
     Span* span = GetOneSpan(_spanLists[index],alignSize);
     assert(span);
     assert(span->freeList);
     //在这个span里，切出n个alignSize的小内存块对象，放到start end中
     start = end = span->freeList;
-    size_t ret = 1;
+    size_t ret = 1; 
     //注意一个span可能没有这么多的小内存块对象了
     for(size_t i = 0; i < n - 1; ++i)
     {
@@ -24,6 +25,7 @@ size_t CentralCache::FetchRangeObject(void*& start,void*& end,size_t n,size_t al
     span->freeList = NextObj(end);
     NextObj(end) = nullptr;
     span->useCount += ret;
+
     _spanLists[index]._mtx.unlock();
     return ret;
 }
@@ -38,7 +40,9 @@ void CentralCache::ReleaseListToSpans(void* start,size_t alignSize)
     {
         void* next = NextObj(start);
         //获取内存块对象对应的span
+        PageCache::GetInstance()->_mtx.lock();
         Span* span = PageCache::GetInstance()->ObjectToSpan(start);
+        PageCache::GetInstance()->_mtx.unlock();
         //头插内存块对象
         NextObj(start) = span->freeList;
         span->freeList = start;
@@ -76,13 +80,10 @@ Span* CentralCache::GetOneSpan(SpanList& spanList,size_t alignSize)
     //走到这里，说明所有的span都没有空间了 或者 spanList为空
     //向PageCache申请一个k页的span
     size_t k = ApplyKSpan(alignSize);
-    //先解开桶锁
-    //当要把申请的span挂到SpanList时，再重新加上桶锁
+    //先解开桶锁，当要把申请的span挂到SpanList时，再重新加上桶锁
     spanList._mtx.unlock();
     PageCache::GetInstance()->_mtx.lock();
     Span* newSpan = PageCache::GetInstance()->NewSpan(k);
-    newSpan->isUse = true;
-    newSpan->objSize = alignSize;
     PageCache::GetInstance()->_mtx.unlock();
     
     //将newSpan管理的大页空间，切分成多个小内存块对象，用链表组织起来
@@ -90,26 +91,26 @@ Span* CentralCache::GetOneSpan(SpanList& spanList,size_t alignSize)
 
     spanList._mtx.lock();
     spanList.PushFront(newSpan);
-    return newSpan;
+    return newSpan; 
 }
 
 void CentralCache::SplitSpan(Span* span,size_t objSize)
 {
     //1 通过页号计算起始地址
-    char* start = reinterpret_cast<char*>((span->pageId) << PAGESHIFT);
-    //2 通过页数和起始地址计算结束地址
-    size_t sumSize = (span->n) << PAGESHIFT;
-    char* end = start + sumSize;
+    char* blockStart = reinterpret_cast<char*>((span->pageId) << PAGESHIFT);
+    //2 通过页数和起始地址计算 结束地址/能切分出来的个数
+    size_t totalBytes = (span->n) << PAGESHIFT;
+    char* blockEnd = blockStart + totalBytes;
+    size_t count = totalBytes / objSize;
     //3 把大块内存切成自由链表
-    //不断尾插 “没有被切分的大块内存部分”
-    span->freeList = start; 
-    void* tail = span->freeList;
-    char* part = start + objSize;
-    while(part < end)
+    span->freeList = blockStart;
+    void* currentBlock = span->freeList; 
+    for(size_t i = 1; i < count; ++i)
     {
-        NextObj(tail) = part;
-        tail = NextObj(tail);
-        part += objSize;
+        void* nextBlock = reinterpret_cast<char*>(currentBlock) + objSize;
+        NextObj(currentBlock) = nextBlock;
+        currentBlock = nextBlock;
     }
-    NextObj(tail) = nullptr;
+    NextObj(currentBlock) = nullptr;
+    span->objSize = objSize;
 }

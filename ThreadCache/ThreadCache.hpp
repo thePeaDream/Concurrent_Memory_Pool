@@ -1,7 +1,7 @@
 #pragma once
 #include "FreeList.hpp"
 #include "../Common/AlignMap.hpp"
-static const size_t NFREELISTS = BUCKET_NUM;
+
 static const size_t MAX_SIZES = 256 << 10;//256 * 1024 Byte
 
 class ThreadCache;
@@ -10,6 +10,7 @@ static thread_local ThreadCache* pTLSThreadCache = nullptr;
 class ThreadCache
 {
 private:
+    static const size_t NFREELISTS = AlignMap::BUCKET_NUM;
     FreeList _freeLists[NFREELISTS];
 public:
     //提供申请和释放小内存块对象

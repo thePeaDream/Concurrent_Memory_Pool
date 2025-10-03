@@ -108,7 +108,15 @@ public:
     void Erase(Span* pos)
     {
         assert(pos);
-        assert(!Empty());
+        assert(pos != _head);
+        Span* test = _head;
+        size_t i = 0;
+        while(test->next != _head)
+        {
+            i++;
+            test = test->next;
+        }
+        assert(i == _size);
         Span* prev = pos->prev;
         Span* next = pos->next;
         prev->next = next;
@@ -121,13 +129,14 @@ public:
     Span* PopFront()
     {
         //头删，返回从链表中被删除的Span*
-       assert(_size > 0);
+       assert(_head != _head->next);
        Span* del = _head->next;
        Erase(del);
        return del;
     }
     void PushFront(Span* newSpan)
     {
+        assert(newSpan);
         Span* next = _head->next;
         _head->next = newSpan;
         newSpan->prev = _head;
@@ -135,7 +144,4 @@ public:
         next->prev = newSpan;
         ++_size;
     }
-
-    
-
 };

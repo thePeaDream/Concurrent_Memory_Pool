@@ -3,12 +3,16 @@
 #include "./UnitTest/TestAlignMap.h"
 #include "./UnitTest/TestMalloc.h"
 #include "./UnitTest/TestMallocFree.h"
+#include "./UnitTest/TestMutiThread.h"
+#include "PerformanceTest.h"
 int main()
 {
     //TestSystemAllocFree();
-    // TestObjectPool();
+    //TestObjectPool();
     //TestAlignMap();
-    // TestMalloc();
-    TestMallocFree();
+    //TestMalloc();
+    //TestMallocFree();
+    //TestMutiThread();
+    PerformanceTest();
     return 0;
 }

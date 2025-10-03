@@ -1,7 +1,10 @@
 #include "ThreadCache.hpp"
 #include "../CentralCache/CentralCache.hpp"
+// thread_local ThreadCache* pTLSThreadCache = nullptr;
 void* ThreadCache::Allocate(size_t size)
 {
+    assert(size <= MAX_SIZES);
+    assert(size > 0);
     //对齐后的内存块大小
     size_t alignSize = AlignMap::Align(size);
     //映射的桶位置
@@ -11,7 +14,7 @@ void* ThreadCache::Allocate(size_t size)
     if(_freeLists[index].Empty())
         FetchObjectFromCentralCache(index,alignSize);
 
-    //从自由链表中获取内存块
+    //从自由链表中获取小内存块对象
     void* obj = _freeLists[index].Pop();
     return obj;
 }

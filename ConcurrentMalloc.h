@@ -4,6 +4,7 @@
 #include "ThreadCache/ThreadCache.hpp"
 #include "PageCache/PageCache.hpp"
 #include "Common/SystemAllocFree.h"
+
 static void* ConcurrentMalloc(size_t size)
 {
     assert(size > 0);
@@ -13,7 +14,11 @@ static void* ConcurrentMalloc(size_t size)
         //三层缓存
         if(pTLSThreadCache == nullptr)
         {
-            pTLSThreadCache = new ThreadCache;
+            static ObjectPool<ThreadCache> _objectPool;
+            //如果是同一个对象池，不同线程同时进来，会向同一个对象池申请，需要加锁?
+            _objectPool._mtx.lock();
+            pTLSThreadCache = _objectPool.New();
+            _objectPool._mtx.unlock();
         }
         void* obj = pTLSThreadCache->Allocate(size);
         return obj;
@@ -33,7 +38,9 @@ static void* ConcurrentMalloc(size_t size)
 static void ConcurrentFree(void* ptr)
 {
     assert(ptr);
+    PageCache::GetInstance()->_mtx.lock();
     Span* span = PageCache::GetInstance()->ObjectToSpan(ptr);
+    PageCache::GetInstance()->_mtx.unlock();
     if(span->objSize <= MAX_SIZES) //正常三层缓存释放
     {
         assert(pTLSThreadCache);

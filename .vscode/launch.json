@@ -22,6 +22,19 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "Debug with Core File",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/main",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "coreDumpPath": "${workspaceFolder}/core"
         }
     ]
 }

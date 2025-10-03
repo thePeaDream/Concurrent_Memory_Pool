@@ -10,10 +10,11 @@ Span* PageCache::NewSpan(size_t k)
     {
         void* ptr = SystemAlloc(k);
         PAGE_ID pageId = (PAGE_ID)(reinterpret_cast<unsigned long long>(ptr) >> PAGESHIFT);
-        Span* span = new Span;
+        Span* span = _objectPool.New();
         span->n = k;
         span->pageId = pageId;
         _mapIdToSpan[pageId] = span;
+        span->isUse = true;
         return span;
     }
     //1 如果在第k个spanList找到span，直接返回
@@ -25,6 +26,7 @@ Span* PageCache::NewSpan(size_t k)
         {
             _mapIdToSpan[i] = kSpan;
         }
+        kSpan->isUse = true;
         return kSpan;
     }
     //2 从第k+1个位置开始，往后找；只要有一个链表不为空，切分后返回对应k页的span
@@ -34,8 +36,8 @@ Span* PageCache::NewSpan(size_t k)
         {
             Span* nSpan = _spanLists[n].PopFront();
             //切分成kSpan和otherSpan
-            Span* kSpan = new Span;
-            Span* otherSpan = new Span;
+            Span* kSpan = _objectPool.New();
+            Span* otherSpan = _objectPool.New();
             
             kSpan->pageId = nSpan->pageId;
             kSpan->n = k;
@@ -47,12 +49,13 @@ Span* PageCache::NewSpan(size_t k)
             //将插入到PageCache里的span，它的最小页和最大页，都插入到_mapIdToSpan中
             _mapIdToSpan[otherSpan->pageId] = otherSpan;
             _mapIdToSpan[otherSpan->pageId + otherSpan->n - 1] = otherSpan;
-            delete nSpan;
+            _objectPool.Delete(nSpan);
             //要使用的kSpan，把它包含的页号和Span*的映射关系都要插入_mapIdToSpan
             for(size_t i = kSpan->pageId; i < kSpan->pageId + kSpan->n;++i)
             {
                 _mapIdToSpan[i] = kSpan;
             }
+            kSpan->isUse = true;
             return kSpan;
         }
     }
@@ -60,7 +63,7 @@ Span* PageCache::NewSpan(size_t k)
     void* ptr =  SystemAlloc(NPAGES);
     if(ptr == nullptr) throw std::bad_alloc();
     PAGE_ID pageId = ((long long)ptr) >> PAGESHIFT;
-    Span* newSpan = new Span;
+    Span* newSpan = _objectPool.New();
     newSpan->n = NPAGES;
     newSpan->pageId = pageId;
     _spanLists[NPAGES].PushFront(newSpan);
@@ -87,18 +90,16 @@ void PageCache::ReleaseSpanToPageCache(Span* span)
     //正在合并的span，也是isUse = true
     assert(span);
     size_t k = span->n;
-    span->objSize = 0;
+
     if(k > NPAGES)
     {
         void* ptr = reinterpret_cast<void*>((span->pageId) << PAGESHIFT);
         SystemFree(ptr,k);
-        delete span;
+        _objectPool.Delete(span);
         return;
     }
-    //1 插入对应的spanList
-    _spanLists[k].PushFront(span);
 
-    //2 对前后的页，尝试进行合并
+    //1 对前后的页，尝试进行合并
     while(true)
     {
         size_t prevPage = span->pageId - 1;
@@ -114,7 +115,7 @@ void PageCache::ReleaseSpanToPageCache(Span* span)
         span->pageId = prevSpan->pageId;
         span->n += prevSpan->n;
         _spanLists[prevSpan->n].Erase(prevSpan);
-        delete prevSpan;
+        _objectPool.Delete(prevSpan);
     }
     while(true)
     {
@@ -130,11 +131,11 @@ void PageCache::ReleaseSpanToPageCache(Span* span)
 
         span->n += nextSpan->n;
         _spanLists[nextSpan->n].Erase(nextSpan);
-        delete nextSpan;
+        _objectPool.Delete(nextSpan);
     }
-    //3 合并完成后，添加span到PageCache对应的spanList中
+    //2 合并完成后，添加span到PageCache对应的spanList中
     _spanLists[span->n].PushFront(span);
-    //4 将合并好的span的最大页号和最小页号添加到_mapIdToSpan中
+    //3 将合并好的span的最大页号和最小页号添加到_mapIdToSpan中
     _mapIdToSpan[span->pageId]= span;
     _mapIdToSpan[span->pageId + span->n - 1] = span;
     span->isUse = false;

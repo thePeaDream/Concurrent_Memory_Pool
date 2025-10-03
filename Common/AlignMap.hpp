@@ -1,7 +1,7 @@
 #pragma once
 #include "Common.h"
-static const size_t BUCKET_NUM = 208; 
-//对齐映射规则
+
+//管理对齐映射规则的类
 //用户申请的空间大小，要对齐到某个内存块大小
 //不同的内存块大小，映射到不同的桶/下标中
 
@@ -14,7 +14,10 @@ static const size_t BUCKET_NUM = 208;
 class AlignMap
 {
 public:
+    //对齐映射规则决定了桶的数量
+    static const size_t BUCKET_NUM = 208; 
     //size:都是用户申请的内存大小
+    //向上对齐
     static size_t Align(size_t size)
     {
         assert(size > 0);
@@ -85,14 +88,17 @@ private:
     //alignNum:对齐数
     static size_t _Align(size_t size,size_t alignNum)
     {
+        assert(size > 0 && alignNum > 0); 
+        
         //找到一个最小的对齐数alignSize,使得alignSize >= size,且alignSize % alignNum = 0
 
         //&~(alignNum - 1): 对齐掩码，用于屏蔽低位，让结果向下舍入到alignNum的倍数
         //size + alignNum - 1: 确保结果至少达到下一个对齐边界, -1保证在size本身就是alignNum的倍数下，不会越过2个对齐边界
         return (size + alignNum - 1)&~(alignNum-1);
-    }
+    } 
     static size_t _Mapping(size_t remainSize,size_t alignShift)
     {
+        //remainSize一定是alignSize的倍数
         //remainSize / (1 << alignShift) - 1
         return (remainSize >> alignShift) - 1;
     }

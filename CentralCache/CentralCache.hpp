@@ -7,7 +7,7 @@
 class CentralCache
 {
 private:
-    static const size_t NSPANLISTS = BUCKET_NUM;
+    static const size_t NSPANLISTS = AlignMap::BUCKET_NUM;
     SpanList _spanLists[NSPANLISTS];
 //单例模式
 private:
@@ -42,9 +42,6 @@ private:
     }
     //切分Span的大页空间成多个小内存块对象，用链表组织起来
     void SplitSpan(Span* span,size_t objSize);
-
-    
-    
 };
 
 

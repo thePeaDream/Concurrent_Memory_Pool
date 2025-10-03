@@ -1,7 +1,7 @@
 #pragma once
 #include "../Common/Common.h"
 
-//用链表组织管理空闲的小内存块对象
+//用链表组织管理小内存块对象
 class FreeList
 {
 private:
@@ -31,6 +31,7 @@ public:
     }
     void PushRange(void* start,void* end,size_t n)
     {
+        assert(start && end);
         NextObj(end) = _freeList;
         _freeList = start;
         _size += n;
@@ -40,10 +41,11 @@ public:
         assert(_size >= n);
         start = end = _freeList;
         //end往后走n-1步
-        for(size_t i = 1; i < n ; ++i)
+        for(size_t i = 0; i < n - 1 ; ++i)
             end = NextObj(end);
         _freeList = NextObj(end);
         NextObj(end) = nullptr;
+        _size -= n;
     }
 
     size_t& AllocSize()
