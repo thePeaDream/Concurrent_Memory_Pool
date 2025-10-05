@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="头文件\Common">
+      <UniqueIdentifier>{d19c9ca4-669b-4927-bc07-e75a7282344f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\PageCache">
+      <UniqueIdentifier>{a2b16b99-7cc6-4476-b1d2-88581c814285}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\CentralCache">
+      <UniqueIdentifier>{7a08b1f8-e5d9-4ba7-827a-76a48f602c68}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\ThreadCache">
+      <UniqueIdentifier>{1ac449f2-fd70-4c20-9617-e232bb7210be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Test">
+      <UniqueIdentifier>{ff6b9dfb-c26c-450d-8958-e6c05dcc3aa8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CentralCache.h">
+      <Filter>头文件\CentralCache</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.h">
+      <Filter>头文件\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="AlignMap.hpp">
+      <Filter>头文件\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Span.hpp">
+      <Filter>头文件\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemAllocFree.hpp">
+      <Filter>头文件\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectPool.hpp">
+      <Filter>头文件\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="PageCache.h">
+      <Filter>头文件\PageCache</Filter>
+    </ClInclude>
+    <ClInclude Include="PageTable.hpp">
+      <Filter>头文件\PageCache</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadCache.h">
+      <Filter>头文件\ThreadCache</Filter>
+    </ClInclude>
+    <ClInclude Include="FreeList.hpp">
+      <Filter>头文件\ThreadCache</Filter>
+    </ClInclude>
+    <ClInclude Include="ConcurrentMalloc.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TestAlignMap.hpp">
+      <Filter>头文件\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="TestMalloc.hpp">
+      <Filter>头文件\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="TestMallocFree.hpp">
+      <Filter>头文件\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="TestMutiThread.hpp">
+      <Filter>头文件\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="TestObjectPool.hpp">
+      <Filter>头文件\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="TestSystemAllocFree.hpp">
+      <Filter>头文件\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="PerformanceTest.hpp">
+      <Filter>头文件\Test</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CentralCache.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PageCache.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadCache.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
