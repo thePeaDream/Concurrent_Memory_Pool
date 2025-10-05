@@ -11,7 +11,7 @@ static void TestSystemAllocFree()
         void* ptr = SystemAlloc(pages);
         assert(ptr);
         allocated_blocks.push_back(ptr);
-        printf("分配%lu页成功，起始地址是：%p，大小是：%lu字节\n",pages,ptr,pages << PAGESHIFT);
+        // printf("分配%lu页成功，起始地址是：%p，大小是：%lu字节\n",pages,ptr,pages << PAGESHIFT);
     }
     cout << "测试分配内存成功" << endl;
 

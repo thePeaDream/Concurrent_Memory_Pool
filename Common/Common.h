@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -20,13 +21,13 @@
 
 //不同平台定义PAGE_ID
 #ifdef _WIN64
-    typedef unsigned long long PAGE_ID;
+    typedef uint64_t PAGE_ID;
 #elif _WIN32
-    typedef size_t PAGE_ID;
-#elif __x86_64__//linux下64位的宏
-    typedef unsigned long long PAGE_ID;
-#elif __i386__//linux下32位的宏
-    typedef size_t PAGE_ID;
+    typedef uint32_t PAGE_ID;
+#elif __LP64__//__x86_64__//linux下64位的宏  
+    typedef uint64_t PAGE_ID;
+#elif __ILP32__//__i386__//linux下32位的宏
+    typedef uint32_t PAGE_ID;
 #endif
 
 //一页的大小

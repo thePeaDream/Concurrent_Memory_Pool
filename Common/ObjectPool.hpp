@@ -33,7 +33,7 @@ public:
         size_t objSize = sizeof(void*) > sizeof(T) ?sizeof(void*):sizeof(T);
         if(_remainSize < objSize)
         {
-            _remainSize = 128 * 1024;//128 KB
+            _remainSize = 384 * 1024;//384 KB
             _memory = (char*)SystemAlloc(_remainSize >> PAGESHIFT);
         }
         //开始切割

@@ -58,6 +58,6 @@ static void TestObjectPool()
     }    
     size_t end2 = clock();
 
-    printf("%lu轮下每轮申请释放%lu次，new所需时间：%lu ms\n",Rounds,N,end1 - begin1);
-    printf("%lu轮下每轮申请释放%lu次，objectNew所需时间：%lu ms\n",Rounds,N,end2 - begin2);
+    // printf("%lu轮下每轮申请释放%lu次，new所需时间：%lu ms\n",Rounds,N,end1 - begin1);
+    // printf("%lu轮下每轮申请释放%lu次，objectNew所需时间：%lu ms\n",Rounds,N,end2 - begin2);
 }

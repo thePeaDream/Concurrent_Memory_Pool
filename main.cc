@@ -14,5 +14,6 @@ int main()
     //TestMallocFree();
     //TestMutiThread();
     PerformanceTest();
+    //std::cout << sizeof(PAGE_ID) << std::endl;
     return 0;
 }

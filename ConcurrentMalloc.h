@@ -38,9 +38,7 @@ static void* ConcurrentMalloc(size_t size)
 static void ConcurrentFree(void* ptr)
 {
     assert(ptr);
-    PageCache::GetInstance()->_mtx.lock();
     Span* span = PageCache::GetInstance()->ObjectToSpan(ptr);
-    PageCache::GetInstance()->_mtx.unlock();
     if(span->objSize <= MAX_SIZES) //正常三层缓存释放
     {
         assert(pTLSThreadCache);

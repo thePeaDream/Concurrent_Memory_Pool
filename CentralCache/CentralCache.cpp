@@ -40,9 +40,7 @@ void CentralCache::ReleaseListToSpans(void* start,size_t alignSize)
     {
         void* next = NextObj(start);
         //获取内存块对象对应的span
-        PageCache::GetInstance()->_mtx.lock();
         Span* span = PageCache::GetInstance()->ObjectToSpan(start);
-        PageCache::GetInstance()->_mtx.unlock();
         //头插内存块对象
         NextObj(start) = span->freeList;
         span->freeList = start;

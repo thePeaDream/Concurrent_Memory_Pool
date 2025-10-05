@@ -36,8 +36,10 @@ void ThreadCache::FetchObjectFromCentralCache(size_t index,size_t alignSize)
     void* end = nullptr;
     //自由链表/桶小内存块对象不足时，一次向CentralCache申请多少个小内存块对象
     //采用慢增长
-    size_t batchNum = std::min(_freeLists[index].AllocSize(),ApplyNumberLimit(alignSize));
-    if(batchNum == _freeLists[index].AllocSize())
+    size_t limitNum = ApplyNumberLimit(alignSize);
+    size_t allocSize = _freeLists[index].AllocSize();
+    size_t batchNum = limitNum < allocSize ? limitNum:allocSize;
+    if(batchNum == allocSize)
         _freeLists[index].AllocSize()++;
     
     //实际申请到的内存块数量

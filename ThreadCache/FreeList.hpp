@@ -60,5 +60,4 @@ public:
     {
         return _size == 0;
     }
-
 };
